@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 
-from osdagbridge.core.bridge_components.sub_structure.solids import Box, Cylinder, PrismX
+from osdagbridge.core.bridge_components.sub_structure.solids import Box, Cylinder, PrismX, PrismY
 from osdagbridge.core.ifc_export_bridge.bridge_geometry_mapper import create_ifc_guid
 
 S = 0.001                     # mm -> m
@@ -105,6 +105,19 @@ class SubstructureIfcWriter:
             place = self._placement((solid.x0, 0., 0.), z_dir=(1., 0., 0.), x_dir=(0., 1., 0.))
             return place, body, {"Shape": "PRISM_X", "Length": solid.length * S,
                                  "ElevationArea": solid.area * S * S}
+        if isinstance(solid, PrismY):
+            pts = [self.f.createIfcCartesianPoint((x * S, z * S)) for x, z in solid.xz]
+            poly = self.f.createIfcPolyline(pts + [pts[0]])
+            prof = self.f.createIfcArbitraryClosedProfileDef("AREA", "PierCapSection", poly)
+            body = self.m.create_extruded_solid(prof, solid.length * S, self._identity())
+            # Extrude along -Y from the far end: local Z = -Y and local X = X give
+            # local Y = +Z, so the profile's (x, z) points map straight across.
+            place = self._placement((0., solid.y0 + solid.length, 0.),
+                                    z_dir=(0., -1., 0.), x_dir=(1., 0., 0.))
+            return place, body, {"Shape": "PRISM_Y", "Length": solid.length * S,
+                                 "SectionArea": solid.area * S * S,
+                                 "SectionXZ": json.dumps([[round(x * S, 6), round(z * S, 6)]
+                                                          for x, z in solid.xz])}
         raise TypeError(f"unknown solid {type(solid).__name__}")
 
     # -------------------------------------------------------------- members

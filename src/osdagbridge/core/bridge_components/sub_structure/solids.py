@@ -116,6 +116,43 @@ def fillet_polyline(points, r, segments=6):
 
 
 @dataclass
+class PrismY:
+    """A polygon in the X-Z plane extruded along +Y from y0 by length.
+
+    Used for the pier cap: a trapezoid in section (wide at the top, narrow at
+    the bottom) running across the deck.
+    """
+    y0: float
+    length: float
+    xz: list[tuple[float, float]]
+
+    @property
+    def area(self) -> float:
+        pts = self.xz
+        return abs(sum(pts[i][0] * pts[(i + 1) % len(pts)][1]
+                       - pts[(i + 1) % len(pts)][0] * pts[i][1]
+                       for i in range(len(pts)))) / 2.0
+
+    @property
+    def volume(self) -> float:
+        return self.area * self.length
+
+    def bounds(self):
+        xs = [p[0] for p in self.xz]
+        zs = [p[1] for p in self.xz]
+        return ((min(xs), self.y0, min(zs)), (max(xs), self.y0 + self.length, max(zs)))
+
+
+def circle_points(cx, cy, z, r, n=24, gap=0.0):
+    """Points of a horizontal circle (a hoop). ``gap`` leaves the ends apart
+    by that arc length, as a real hoop is a lapped bar, not a closed ring."""
+    a_gap = gap / r if r > 0 else 0.0
+    span = 2 * math.pi - a_gap
+    return [(cx + r * math.cos(a_gap / 2 + span * k / n),
+             cy + r * math.sin(a_gap / 2 + span * k / n), z) for k in range(n + 1)]
+
+
+@dataclass
 class Bar:
     """A reinforcing bar: a polyline axis swept by a circle of diameter d."""
     name: str

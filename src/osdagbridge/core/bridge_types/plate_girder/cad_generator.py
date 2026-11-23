@@ -908,6 +908,12 @@ class PlateGirderCADGenerator:
         
         supports = supports_tri + supports_cyl
 
+        # STEP 12: SUBSTRUCTURE (pier cap, pier, pile cap, piles and rebar)
+        # Built under the bearing lines at both ends of the span. The same
+        # parametric model feeds the IFC export, so both always agree.
+        substructure = self._build_substructure(
+            design_params, total_width, deck_out["total_deck_width"], _calculate_skew_offset)
+
         # RETURN ALL GENERATED COMPONENTS
         
         return {
@@ -956,8 +962,34 @@ class PlateGirderCADGenerator:
             "median_w_beams": median_w_beams,
             
             # Railings
-            "railings": railings
+            "railings": railings,
+
+            # Substructure (concrete members and their reinforcement)
+            **substructure,
         }
+
+    def _build_substructure(self, design_params, girder_layout_width, deck_width, skew_offset):
+        """pythonOCC shapes of the substructure, keyed for display.
+
+        Returns {} when the design sets ``include_substructure = False``.
+        Dimensions come from ``design_params.substructure_params`` if present,
+        otherwise from the task defaults in SubstructureParams.
+        """
+        if getattr(design_params, "include_substructure", True) is False:
+            return {}
+        from osdagbridge.core.bridge_components.sub_structure.builder import (
+            build_substructure_cad)
+        from osdagbridge.core.bridge_components.sub_structure.substructure import (
+            SubstructureParams, bearing_lines, build_substructure)
+
+        params = getattr(design_params, "substructure_params", None) or SubstructureParams()
+        bearing_ys = [(i * self.girder_spacing) - girder_layout_width / 2
+                      for i in range(self.num_girders)]
+        lines = bearing_lines(self.span_length_L, self.girder_section_d,
+                              self.girder_section_tf_b, bearing_ys, skew_offset)
+        self.substructure_lines = build_substructure(lines, params, deck_width=deck_width,
+                                                     deck_centre_y=0.0)
+        return build_substructure_cad(self.substructure_lines)
 
     def create3Dcad(self):
         """

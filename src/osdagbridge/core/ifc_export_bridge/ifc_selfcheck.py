@@ -147,6 +147,33 @@ def _seg_dist(p1, q1, p2, q2):
     return math.dist(c1, c2)
 
 
+def _prism_y_margin(bar, section):
+    """Least distance from a bar's surface to the faces of an X-Z section.
+
+    Each bar axis point is tested against every edge of the (convex) section,
+    and the bar radius is taken off in that edge's normal direction.
+    """
+    n = len(section)
+    cx = sum(p[0] for p in section) / n
+    cz = sum(p[1] for p in section) / n
+    least = math.inf
+    for i in range(n):
+        (x1, z1), (x2, z2) = section[i], section[(i + 1) % n]
+        ex, ez = x2 - x1, z2 - z1
+        length = math.hypot(ex, ez)
+        nx, nz = ez / length, -ex / length          # a unit normal of the edge
+        if (cx - x1) * nx + (cz - z1) * nz < 0:      # make it point inwards
+            nx, nz = -nx, -nz
+        for p, q in zip(bar.xyz, bar.xyz[1:]):
+            seg = math.dist(p, q) or 1.0
+            # a segment's surface reaches r * |sin| of its angle to the normal
+            d_par = ((q[0] - p[0]) * nx + (q[2] - p[2]) * nz) / seg
+            ext = bar.r * math.sqrt(max(0.0, 1 - d_par * d_par))
+            for pt in (p, q):
+                least = min(least, (pt[0] - x1) * nx + (pt[2] - z1) * nz - ext)
+    return least
+
+
 def _boxes_overlap(a, b, depth):
     return all(min(a.hi[k], b.hi[k]) - max(a.lo[k], b.lo[k]) > depth for k in range(3))
 
@@ -281,6 +308,9 @@ def _check_cover(members, geo, bars_of, bar_geo) -> Check:
                 cy = (host.lo[1] + host.hi[1]) / 2
                 margin = min(ps["Radius"] - bg.radial_extent(cx, cy),
                              bg.lo[2] - host.lo[2], host.hi[2] - bg.hi[2])
+            elif ps["Shape"] == "PRISM_Y":
+                margin = min(_prism_y_margin(bg, json.loads(ps["SectionXZ"])),
+                             bg.lo[1] - host.lo[1], host.hi[1] - bg.hi[1])
             else:
                 margin = min(min(bg.lo[k] - host.lo[k], host.hi[k] - bg.hi[k])
                              for k in range(3))

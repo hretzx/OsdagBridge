@@ -467,6 +467,35 @@ class CAD3DWindow(QWidget):
             BARRIER_COLOR
         )
 
+        # SUBSTRUCTURE: semi-transparent concrete (opacity 0.35, i.e. OCC
+        # transparency 0.65) so the opaque steel reinforcement shows through.
+        CONCRETE_COLOR = Quantity_Color(0.62, 0.62, 0.60, Quantity_TOC_RGB)
+        REBAR_COLOR = Quantity_Color(0.55, 0.20, 0.12, Quantity_TOC_RGB)
+        sp = getattr(self.generator, "substructure_lines", None)
+        p0 = sp[0].parts if sp else []
+        def _dim(kind, key):
+            part = next((x for x in p0 if x.kind == kind), None)
+            return part.props.get(key, 0) if part else 0
+        display_and_register(cad_data.get("pier_caps", []), "Pier Cap",
+                             f"Pier Cap\nTop width: {_dim('PIER_CAP', 'TopWidth'):.0f} mm"
+                             f"\nBottom width: {_dim('PIER_CAP', 'BottomWidth'):.0f} mm"
+                             f"\nDepth: {_dim('PIER_CAP', 'Depth'):.0f} mm",
+                             CONCRETE_COLOR, transparency=0.65)
+        display_and_register(cad_data.get("piers", []), "Pier",
+                             f"Pier\nDiameter: {_dim('PIER', 'Diameter'):.0f} mm"
+                             f"\nHeight: {_dim('PIER', 'Height'):.0f} mm",
+                             CONCRETE_COLOR, transparency=0.65)
+        display_and_register(cad_data.get("pile_caps", []), "Pile Cap",
+                             f"Pile Cap\n{_dim('PILE_CAP', 'Length'):.0f} x "
+                             f"{_dim('PILE_CAP', 'Width'):.0f} x {_dim('PILE_CAP', 'Depth'):.0f} mm",
+                             CONCRETE_COLOR, transparency=0.65)
+        display_and_register(cad_data.get("piles", []), "Pile",
+                             f"Pile\nDiameter: {_dim('PILE', 'Diameter'):.0f} mm"
+                             f"\nLength: {_dim('PILE', 'Length'):.0f} mm",
+                             CONCRETE_COLOR, transparency=0.65)
+        display_and_register(cad_data.get("substructure_rebar", []), "Reinforcement",
+                             "Reinforcement", REBAR_COLOR, selectable=False)
+
         # Nodes and grillage overlays
         node_positions = self._render_nodes()
         self._render_grillage(node_positions)
@@ -716,6 +745,7 @@ class CAD3DWindow(QWidget):
             "Crash Barrier": ["Crash Barrier", "Crash Barrier W-Beam"],
             "Median":        ["Median", "Median W-Beam"],
             "Railing":       ["Railing"],
+            "Substructure":  ["Pier Cap", "Pier", "Pile Cap", "Pile", "Reinforcement"],
             "Grillage":      ["Grillage"],
             "Node":          ["Node"],
         }
@@ -1209,6 +1239,7 @@ class BridgeComponentCheckbox(QWidget):
         ("Crash Barrier", "Crash Barrier"),
         ("Median",        "Median"),
         ("Railing",       "Railing"),
+        ("Substructure",  "Substructure"),
         ("Grillage view", "Grillage"),
         ("Node",          "Node"),
         ("Node Numbers",  "NodeNumbers"),

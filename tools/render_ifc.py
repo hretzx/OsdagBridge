@@ -73,9 +73,7 @@ def main(path, out_dir):
     plt.close(fig)
 
     # 2. one pier, see-through, with its reinforcement
-    name = "A1"
-    parts = [e for e, _ in m if is_sub(e) and (e.Name.startswith(name + " ") or
-                                               (e.is_a("IfcBeam") and e.Name.startswith("A ")))]
+    parts = [e for e, _ in m if is_sub(e) and e.Name.startswith("A ")]
     bars = [b for p in parts if not p.is_a("IfcBeam") for r in p.IsDecomposedBy for b in r.RelatedObjects
             if b.is_a("IfcReinforcingBar")]
     fig = plt.figure(figsize=(9, 15), dpi=150)
@@ -83,12 +81,12 @@ def main(path, out_dir):
     every = []
     for e, tris in m:
         if e in parts and not e.is_a("IfcBeam"):
-            draw(ax, tris, "#c9c9c4", 0.12, 0.3, "#8a8a85")
+            draw(ax, tris, "#9e9e99", 0.35, 0.3, "#6f6f6a")
             every += tris
     for _, tris in meshes(f, bars):
         draw(ax, tris, "#b22a1f", 1.0)
     frame(ax, every, 12, -55)
-    ax.set_title("Pier A1, its pile cap and four piles, with reinforcement", fontsize=12)
+    ax.set_title("Pier A, its pile cap and four piles: concrete at opacity 0.35, rebar opaque", fontsize=12)
     fig.savefig(os.path.join(out_dir, "pier_rebar.png"), bbox_inches="tight")
     plt.close(fig)
     print("written to", out_dir)
