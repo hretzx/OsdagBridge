@@ -263,4 +263,6 @@ src/osdag_map_cache/
 # ospgrillage/
 temp_plot.html
 *.html
-tools/
+tools/out/
+.venv/
+__pycache__/

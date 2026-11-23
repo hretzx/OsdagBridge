@@ -1,0 +1,43 @@
+{
+  "path": "out/bridge_with_substructure.ifc",
+  "members": 50,
+  "bars": 1368,
+  "ok": true,
+  "checks": [
+    {
+      "name": "1. volume matches design",
+      "ok": true,
+      "passed": 50,
+      "failures": [],
+      "detail": "largest difference 0.130%"
+    },
+    {
+      "name": "2. members stack face to face",
+      "ok": true,
+      "passed": 48,
+      "failures": [],
+      "detail": ""
+    },
+    {
+      "name": "3. every bearing lands on a pier cap",
+      "ok": true,
+      "passed": 22,
+      "failures": [],
+      "detail": ""
+    },
+    {
+      "name": "4. bars keep their concrete cover",
+      "ok": true,
+      "passed": 1368,
+      "failures": [],
+      "detail": "least cover found 50.0 mm"
+    },
+    {
+      "name": "5. no clashes",
+      "ok": true,
+      "passed": 31917,
+      "failures": [],
+      "detail": "50 members (bounding boxes), 1368 bars in 30692 pairs (exact axis distance)"
+    }
+  ]
+}

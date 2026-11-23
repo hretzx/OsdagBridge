@@ -619,6 +619,15 @@ class BridgeIfcGenerator:
                  elif item._class_name == "RailingSweep":
                      _process_railing(item)
                  
+        # Substructure: pier caps, piers, pile caps, piles and their rebar.
+        substructure = extracted_dict.get("substructure") or []
+        if substructure:
+            from osdagbridge.core.ifc_export_bridge.substructure_ifc import SubstructureIfcWriter
+            params = getattr(cad_context, "substructure_params", None)
+            rebar_grade = getattr(params, "rebar_grade", "Fe500")
+            SubstructureIfcWriter(self.file, self.mapper, self._owner_history,
+                                  self.building).write(substructure, rebar_grade)
+
         # Intentionally ignore "deck_textures"
         print("Model assembly complete. Saving...")
         self.file.write(self.output_path)

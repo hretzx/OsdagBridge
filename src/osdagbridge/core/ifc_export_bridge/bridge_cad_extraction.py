@@ -125,7 +125,8 @@ class PlateGirderIFCExtractor:
             "cross_bracings": self._extract_cross_bracings(n_girders, spacing),
             "deck_slab": self._extract_deck_slab(total_width),
             "crash_barriers": self._extract_safety_components(total_width, actual_base_width, actual_railing_width),
-            "supports": self._extract_supports(n_girders, spacing)
+            "supports": self._extract_supports(n_girders, spacing),
+            "substructure": self._extract_substructure(n_girders, spacing),
         }
 
     def _solve_girder_layout(self, total_width):
@@ -465,6 +466,40 @@ class PlateGirderIFCExtractor:
                 z_base=z_base, y_offset=y_railing_right, skew=self.skew_angle, geo=railing_geo, ifc_name="Footpath Railing R"))
                 
         return components
+
+    def _bearing_lines(self, n_girders, spacing):
+        """Bearing positions at both ends of the span, as used by _extract_supports.
+
+        Returns [(name, [x of each bearing], [y of each bearing], z of the underside)].
+        On a skewed deck each girder's bearing has its own x; the pier cap is
+        laid square at the average x, and the IFC self-check reports any
+        bearing that then falls off the cap.
+        """
+        total_width = (n_girders - 1) * spacing
+        D = self.cad.girder_section_d
+        z_contact = -(D / 2.0 + self.cad.girder_section_tf_b)
+        base_dim = min(0.10 * self.cad.span_length_L, 0.75 * D)
+        h_supp = base_dim / 1.5
+        w_supp = base_dim / 2.0
+        r_cyl = h_supp / 2.0
+        ys = [(i * spacing) - (total_width / 2) for i in range(n_girders)]
+        xs_left = [self._calculate_skew_offset(y) + w_supp for y in ys]
+        xs_right = [self._calculate_skew_offset(y) + self.cad.span_length_L - r_cyl for y in ys]
+        z_bearing = z_contact - h_supp
+        return [("A", xs_left, ys, z_bearing), ("B", xs_right, ys, z_bearing)]
+
+    def _extract_substructure(self, n_girders, spacing):
+        """Pier caps, piers, pile caps and piles under both bearing lines.
+
+        Proportions come from ``cad.substructure_params`` when the design
+        supplies them, otherwise from SubstructureParams defaults.
+        """
+        if getattr(self.cad, "include_substructure", True) is False:
+            return []
+        from osdagbridge.core.bridge_components.sub_structure.substructure import (
+            SubstructureParams, build_substructure)
+        params = getattr(self.cad, "substructure_params", None) or SubstructureParams()
+        return build_substructure(self._bearing_lines(n_girders, spacing), params)
 
     def _extract_supports(self, n_girders, spacing):
         supports = []
