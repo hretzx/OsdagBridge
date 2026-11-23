@@ -1,0 +1,10 @@
+Self-check of out/bridge_with_substructure.ifc
+50 concrete members, 1368 reinforcing bars
+
+[PASS] 1. volume matches design: 50 passed, 0 failed  (largest difference 0.130%)
+[PASS] 2. members stack face to face: 48 passed, 0 failed
+[PASS] 3. every bearing lands on a pier cap: 22 passed, 0 failed
+[PASS] 4. bars keep their concrete cover: 1368 passed, 0 failed  (least cover found 50.0 mm)
+[PASS] 5. no clashes: 31917 passed, 0 failed  (50 members (bounding boxes), 1368 bars in 30692 pairs (exact axis distance))
+
+RESULT: ALL CHECKS PASSED
